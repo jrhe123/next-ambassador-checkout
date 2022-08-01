@@ -36,6 +36,8 @@ interface infoFormProps {
   zip: string;
 }
 
+declare var Stripe;
+
 export default function Home() {
   const router = useRouter();
   const { code } = router.query;
@@ -135,7 +137,11 @@ export default function Home() {
       }
       const response = await axios.post(`${constants.endpoint}/orders`, params);
       const { data } = response;
-      console.log("data: ", data);
+      //
+      const stripe = new Stripe(constants.stripe_pk);
+      stripe.redirectToCheckout({
+        sessionId: data.id,
+      });
     } catch (error) {
       console.error(error);
     }
