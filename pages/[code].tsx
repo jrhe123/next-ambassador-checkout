@@ -21,6 +21,11 @@ interface formProps {
   user: User;
   products: Product[];
 }
+interface quantityProps {
+  product_id: number;
+  quantity: number;
+  price: number;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -30,6 +35,7 @@ export default function Home() {
     user: null,
     products: [],
   });
+  const [quantities, setQuantities] = useState<quantityProps[]>([]);
 
   useEffect(() => {
     if (code !== undefined) {
@@ -43,12 +49,39 @@ export default function Home() {
             user: data.user,
             products: data.products,
           });
+          setQuantities(
+            data.products.map((p: Product) => {
+              return {
+                product_id: p.id,
+                quantity: 0,
+                price: p.price,
+              };
+            })
+          );
         } catch (error) {
           console.error("error: ", error);
         }
       })();
     }
   }, [code]);
+
+  const handleQuantityChange = (id: number, quantity: number) => {
+    setQuantities(
+      quantities.map((q) => {
+        if (q.product_id === id) {
+          return {
+            ...q,
+            quantity,
+          };
+        }
+        return q;
+      })
+    );
+  };
+
+  const calculateTotal: () => number = () => {
+    return quantities.reduce((s, p) => (s += p.quantity * p.price), 0);
+  };
 
   return (
     <Layout>
@@ -82,16 +115,20 @@ export default function Home() {
                   <input
                     type="number"
                     min={0}
+                    defaultValue={0}
                     style={{ width: "65px" }}
                     className="form-control text-muted"
+                    onChange={(e) =>
+                      handleQuantityChange(product.id, parseInt(e.target.value))
+                    }
                   />
                 </li>
               </div>
             ))}
 
             <li className="list-group-item d-flex justify-content-between">
-              <span>Total (USD)</span>
-              <strong>$20</strong>
+              <span>Total (CAD)</span>
+              <strong>${calculateTotal()}</strong>
             </li>
           </ul>
         </div>
