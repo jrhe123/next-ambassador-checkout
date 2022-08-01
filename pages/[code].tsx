@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { SyntheticEvent, useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import axios from "axios";
 import constants from "../constants";
@@ -26,6 +26,15 @@ interface quantityProps {
   quantity: number;
   price: number;
 }
+interface infoFormProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  country: string;
+  city: string;
+  zip: string;
+}
 
 export default function Home() {
   const router = useRouter();
@@ -36,6 +45,15 @@ export default function Home() {
     products: [],
   });
   const [quantities, setQuantities] = useState<quantityProps[]>([]);
+  const [infoForm, setInfoForm] = useState<infoFormProps>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    address: "",
+    country: "",
+    city: "",
+    zip: "",
+  });
 
   useEffect(() => {
     if (code !== undefined) {
@@ -83,6 +101,46 @@ export default function Home() {
     return quantities.reduce((s, p) => (s += p.quantity * p.price), 0);
   };
 
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInfoForm({
+      ...infoForm,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleFormSubmit = async (e: SyntheticEvent) => {
+    e.preventDefault();
+    try {
+      const params = {
+        first_name: infoForm.firstName.trim(),
+        last_name: infoForm.lastName.trim(),
+        email: infoForm.email.trim(),
+        address: infoForm.address.trim(),
+        country: infoForm.country.trim(),
+        city: infoForm.city.trim(),
+        zip: infoForm.zip.trim(),
+        code,
+        products: quantities
+          .map((p) => {
+            return {
+              product_id: p.product_id,
+              quantity: p.quantity,
+            };
+          })
+          .filter((p) => p.quantity > 0),
+      };
+      if (!params.products.length) {
+        alert("Invalid product quantity");
+        return;
+      }
+      const response = await axios.post(`${constants.endpoint}/orders`, params);
+      const { data } = response;
+      console.log("data: ", data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <Layout>
       <div className="py-5 text-center">
@@ -114,8 +172,11 @@ export default function Home() {
                   </div>
                   <input
                     type="number"
-                    min={0}
-                    defaultValue={0}
+                    min={1}
+                    value={
+                      quantities.find((p) => p.product_id === product.id)
+                        ?.quantity
+                    }
                     style={{ width: "65px" }}
                     className="form-control text-muted"
                     onChange={(e) =>
@@ -134,16 +195,18 @@ export default function Home() {
         </div>
         <div className="col-md-8 order-md-1">
           <h4 className="mb-3">Personal Info</h4>
-          <form className="needs-validation">
+          <form className="needs-validation" onSubmit={handleFormSubmit}>
             <div className="row">
               <div className="col-md-6 mb-3">
                 <label htmlFor="firstName">First name</label>
                 <input
                   type="text"
                   className="form-control"
-                  id="firstName"
                   placeholder="First name"
                   required
+                  name="firstName"
+                  value={infoForm.firstName}
+                  onChange={handleFormChange}
                 />
               </div>
               <div className="col-md-6 mb-3">
@@ -151,9 +214,11 @@ export default function Home() {
                 <input
                   type="text"
                   className="form-control"
-                  id="lastName"
                   placeholder="Last name"
                   required
+                  name="lastName"
+                  value={infoForm.lastName}
+                  onChange={handleFormChange}
                 />
               </div>
             </div>
@@ -163,8 +228,11 @@ export default function Home() {
               <input
                 type="email"
                 className="form-control"
-                id="email"
                 placeholder="you@example.com"
+                required
+                name="email"
+                value={infoForm.email}
+                onChange={handleFormChange}
               />
             </div>
 
@@ -173,9 +241,11 @@ export default function Home() {
               <input
                 type="text"
                 className="form-control"
-                id="address"
                 placeholder="1234 Main St"
                 required
+                name="address"
+                value={infoForm.address}
+                onChange={handleFormChange}
               />
             </div>
 
@@ -185,8 +255,11 @@ export default function Home() {
                 <input
                   type="text"
                   className="form-control"
-                  id="country"
                   placeholder="Country"
+                  required
+                  name="country"
+                  value={infoForm.country}
+                  onChange={handleFormChange}
                 />
               </div>
               <div className="col-md-4 mb-3">
@@ -194,8 +267,11 @@ export default function Home() {
                 <input
                   type="text"
                   className="form-control"
-                  id="city"
                   placeholder="City"
+                  required
+                  name="city"
+                  value={infoForm.city}
+                  onChange={handleFormChange}
                 />
               </div>
               <div className="col-md-3 mb-3">
@@ -203,9 +279,11 @@ export default function Home() {
                 <input
                   type="text"
                   className="form-control"
-                  id="zip"
-                  placeholder="Zip"
+                  placeholder="Postal Code"
                   required
+                  name="zip"
+                  value={infoForm.zip}
+                  onChange={handleFormChange}
                 />
               </div>
             </div>
