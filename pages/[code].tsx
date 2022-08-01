@@ -1,14 +1,63 @@
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
+import axios from "axios";
+import constants from "../constants";
+
+interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+interface Product {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  price: number;
+}
+interface formProps {
+  user: User;
+  products: Product[];
+}
 
 export default function Home() {
   const router = useRouter();
   const { code } = router.query;
+
+  const [form, setForm] = useState<formProps>({
+    user: null,
+    products: [],
+  });
+
+  useEffect(() => {
+    if (code !== undefined) {
+      (async () => {
+        try {
+          const response = await axios.get(
+            `${constants.endpoint}/links/${code}`
+          );
+          const data = response.data;
+          setForm({
+            user: data.user,
+            products: data.products,
+          });
+        } catch (error) {
+          console.error("error: ", error);
+        }
+      })();
+    }
+  }, [code]);
+
   return (
     <Layout>
       <div className="py-5 text-center">
         <h2>Welcome</h2>
-        <p className="lead">has invited you to buy these products!</p>
+        <p className="lead">
+          {form.user?.first_name} {form.user?.last_name} has invited you to buy
+          these products!
+        </p>
       </div>
 
       <div className="row">
@@ -17,13 +66,28 @@ export default function Home() {
             <span className="text-muted">Products</span>
           </h4>
           <ul className="list-group mb-3">
-            <li className="list-group-item d-flex justify-content-between lh-condensed">
-              <div>
-                <h6 className="my-0">Product name</h6>
-                <small className="text-muted">Brief description</small>
+            {form.products.map((product, index) => (
+              <div key={index}>
+                <li className="list-group-item d-flex justify-content-between lh-condensed">
+                  <div>
+                    <h6 className="my-0">{product.title}</h6>
+                    <small className="text-muted">{product.description}</small>
+                  </div>
+                  <span className="text-muted">${product.price}</span>
+                </li>
+                <li className="list-group-item d-flex justify-content-between lh-condensed">
+                  <div>
+                    <h6 className="my-0">Quantity</h6>
+                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    style={{ width: "65px" }}
+                    className="form-control text-muted"
+                  />
+                </li>
               </div>
-              <span className="text-muted">$12</span>
-            </li>
+            ))}
 
             <li className="list-group-item d-flex justify-content-between">
               <span>Total (USD)</span>
